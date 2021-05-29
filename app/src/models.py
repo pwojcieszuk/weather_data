@@ -17,7 +17,7 @@ class Measurement(db.Model):
     type = db.Column(db.String(80))
     recorded_at = db.Column(db.DateTime)
     station_id = db.Column(
-        db.String(80), ForeignKey('station.station_id'), unique=True, nullable=False)
+        db.String(80), ForeignKey('station.station_id'), nullable=False)
 
     def __repr__(self):
         return '<Measurement %r>' % self.station_id

@@ -14,13 +14,16 @@ db.init_app(app)
 def get_stations():
     radius = request.args.get('radius')
     coordinates = request.args.get('coordinates').split(',')
-    # date=request.args.get('date')
+    date=request.args.get('date')
 
-    statement = """SELECT *,
+    statement = """SELECT s.*, m.value, m.type, m.recorded_at,
         ST_Distance(ST_GeomFromText('POINT({0} {1})', 4326), coordinates, "kilometre") as distance
-        FROM station HAVING distance < :radius;""".format(coordinates[0], coordinates[1])
+        FROM station s
+        LEFT JOIN measurement m ON s.station_id = m.station_id
+        WHERE DATE(m.recorded_at) = :date
+        HAVING distance <= :radius;""".format(coordinates[0], coordinates[1])
 
-    result = db.session.execute(statement, {'radius': radius})
+    result = db.session.execute(statement, {'radius': radius, 'date': date})
 
     output = []
 
@@ -28,7 +31,10 @@ def get_stations():
         output.append({
             'id': row['id'],
             'name': row['name'],
-            'station_id': row['station_id']
+            'station_id': row['station_id'],
+            'type': row['type'],
+            'value': row['value'],
+            'recorded_at': row['recorded_at'],
         })
 
     return jsonify(output)
@@ -63,7 +69,7 @@ def update_stations():
                 'recorded_at': station['latest_reading']['recorded_at']
             }
             measurement_insert = insert(measurement_table).values(
-                measurement_data).on_duplicate_key_update( measurement_data)
+                measurement_data)
             db.session.execute(measurement_insert)
     
     db.session.commit()
