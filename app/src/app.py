@@ -1,7 +1,8 @@
 from flask import Flask
 from database import db
-import stations
 from models import Station
+import stations
+from sqlalchemy.dialects.mysql import insert
 
 
 app = Flask(__name__)
@@ -18,8 +19,22 @@ def db_init():
     db.create_all()
     
 @app.cli.command('update-stations')
-def db_init():
-    return stations.get()
+def update_stations():
+    stations_list = stations.get()
+    table = Station.__table__
+    for station in stations_list:
+        data = {
+            'name': station['label'],
+            'station_id': station['serial_number'],
+            'latest_pm_2_5': station['latest_reading']['pm2_5'] if 
+                station['latest_reading'] else None,
+            'coordinates': 'POINT({0} {1})'.format(
+                        station['latitude'], station['longitude']),
+        }
+        insert_stmt = insert(table).values(data).on_duplicate_key_update(data)
+        db.session.execute(insert_stmt)
+    db.session.commit()
+    return 'ok'
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)
