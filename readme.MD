@@ -1,3 +1,11 @@
-docker build -t crawler_container --rm .
-docker run -it --name crawler --rm crawler_container
-docker run -it --name crawler -v "$(pwd)/src:/src" --rm crawler_container
+```
+docker compose up --build
+docker exec -it crawler bash
+flask initdb
+flask update-stations
+
+curl / "http://127.0.0.1:5000/get-stations?coordinates=52.82555727245179,-6.9542953829544&radius=250"
+curl / "http://127.0.0.1:5000/get-stations?coordinates=latitude,longitude&radius=250"
+
+docker compose down -v
+```

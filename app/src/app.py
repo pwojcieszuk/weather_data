@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request, jsonify
 from database import db
 from models import Station
 import stations
@@ -10,9 +10,28 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:password@mysqldb/stations'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-@app.route("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
+@app.route("/get-stations")
+def get_stations():
+    radius = request.args.get('radius')
+    coordinates = request.args.get('coordinates').split(',')
+    # date=request.args.get('date')
+
+    statement = """SELECT *,
+        ST_Distance(ST_GeomFromText('POINT({0} {1})', 4326), coordinates, "kilometre") as distance
+        FROM station HAVING distance < :radius;""".format(coordinates[0], coordinates[1])
+
+    result = db.session.execute(statement, {'radius': radius})
+
+    output = []
+
+    for row in result:
+        output.append({
+            'id': row['id'],
+            'name': row['name'],
+            'station_id': row['station_id']
+        })
+
+    return jsonify(output)
 
 @app.cli.command('initdb')
 def db_init():
