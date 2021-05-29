@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from database import db
-from models import Station
+from models import Station, Measurement
 import stations
 from sqlalchemy.dialects.mysql import insert
 
@@ -40,18 +40,32 @@ def db_init():
 @app.cli.command('update-stations')
 def update_stations():
     stations_list = stations.get()
-    table = Station.__table__
+    station_table = Station.__table__
+    measurement_table = Measurement.__table__
+
     for station in stations_list:
-        data = {
+        station_data = {
             'name': station['label'],
             'station_id': station['serial_number'],
-            'latest_pm_2_5': station['latest_reading']['pm2_5'] if 
-                station['latest_reading'] else None,
             'coordinates': 'POINT({0} {1})'.format(
                         station['latitude'], station['longitude']),
         }
-        insert_stmt = insert(table).values(data).on_duplicate_key_update(data)
-        db.session.execute(insert_stmt)
+        station_insert = insert(station_table).values(station_data).on_duplicate_key_update(station_data)
+        db.session.execute(station_insert)
+        
+        latest_pm_2_5 = station['latest_reading']['pm2_5'] if station['latest_reading'] else None
+        
+        if (latest_pm_2_5): 
+            measurement_data = {
+                'value': latest_pm_2_5,
+                'type': 'latest_pm_2_5',
+                'station_id': station['serial_number'],
+                'recorded_at': station['latest_reading']['recorded_at']
+            }
+            measurement_insert = insert(measurement_table).values(
+                measurement_data).on_duplicate_key_update( measurement_data)
+            db.session.execute(measurement_insert)
+    
     db.session.commit()
     return 'ok'
 
