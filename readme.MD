@@ -38,7 +38,7 @@ Retrieve stations data from the api endpoint:
 ```
 curl / "http://127.0.0.1:5000/get-stations?coordinates={latitude,longitude}&radius={radius_in_km}&date={date YYYY-MM-DD}"
 
-# for examle:
+# for example:
 curl / "http://127.0.0.1:5000/get-stations?coordinates=52.82555727245179,-6.9542953829544&radius=250&date=2021-05-29"
 
 ```
